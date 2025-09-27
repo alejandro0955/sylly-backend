@@ -1,0 +1,3 @@
+ALTER TABLE "Syllabus"
+  ADD COLUMN IF NOT EXISTS "school" TEXT,
+  ADD COLUMN IF NOT EXISTS "professor" TEXT;

@@ -1,11 +1,32 @@
 const { prisma } = require('../config/db');
-const DEMO = { sub: 'demo', email: 'demo@example.com' };
 
-async function ensureDemoUser() {
+async function ensureUser({ auth0Id, email, name }) {
+  if (!auth0Id) {
+    throw new Error('auth0Id is required');
+  }
+  const data = {
+    auth0Id,
+  };
+  if (email) data.email = email;
+  if (name) data.name = name;
+
   return prisma.user.upsert({
-    where: { auth0Id: DEMO.sub },
-    create: { auth0Id: DEMO.sub, email: DEMO.email, name: 'Demo User' },
-    update: {},
+    where: { auth0Id },
+    create: {
+      auth0Id,
+      email: email || `${auth0Id}@placeholder.local`,
+      name: name || null,
+    },
+    update: {
+      email: email || undefined,
+      name: name || undefined,
+    },
   });
 }
-module.exports = { ensureDemoUser };
+
+function findByAuth0Id(auth0Id) {
+  if (!auth0Id) return null;
+  return prisma.user.findUnique({ where: { auth0Id } });
+}
+
+module.exports = { ensureUser, findByAuth0Id };

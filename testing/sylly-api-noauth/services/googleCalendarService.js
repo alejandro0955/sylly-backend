@@ -40,9 +40,9 @@ function decodeState(state) {
   }
 }
 
-function buildAuthUrl({ continuePath } = {}) {
+function buildAuthUrl({ continuePath, auth0Id } = {}) {
   const { clientId, redirectUri } = getConfig();
-  const state = encodeState({ continuePath });
+  const state = encodeState({ continuePath, auth0Id });
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,

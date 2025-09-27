@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const publicRoutes = require("./routes/publicRoutes");
 const userRoutes = require("./routes/userRoutes");
 const syllabusRoutes = require("./routes/syllabusRoutes");
 const plannerRoutes = require("./routes/plannerRoutes");
@@ -17,6 +18,7 @@ app.use(morgan("dev"));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
+app.use("/api/public", publicRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/syllabi", syllabusRoutes);
 app.use("/api/planner", plannerRoutes);

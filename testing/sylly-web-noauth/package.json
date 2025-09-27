@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.5.0",
     "@tanstack/react-query": "^5.51.1",
     "mammoth": "^1.11.0",
     "pdfjs-dist": "^5.4.149",

@@ -25,6 +25,8 @@ model Syllabus {
   owner      User           @relation(fields: [ownerId], references: [id])
   ownerId    String
   title      String
+  school     String?
+  professor  String?
   fileUrl    String?
   rawText    String?
   eventsJson Json?
@@ -33,7 +35,6 @@ model Syllabus {
   visibility Visibility     @default(PRIVATE)
   createdAt  DateTime       @default(now())
 }
-
 enum Visibility {
   PRIVATE
   SCHOOL
