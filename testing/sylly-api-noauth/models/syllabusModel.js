@@ -16,7 +16,17 @@ const SyllabusModel = {
   findById: (id, ownerId) =>
     prisma.syllabus.findFirst({ where: { id, ownerId }, include: { items: true } }),
   listByOwner: (ownerId) =>
-    prisma.syllabus.findMany({ where: { ownerId }, orderBy: { createdAt: 'desc' } }),
+    prisma.syllabus.findMany({
+      where: { ownerId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        school: true,
+        professor: true,
+        createdAt: true,
+      },
+    }),
   setEvents: (id, ownerId, events) =>
     prisma.syllabus.updateMany({
       where: { id, ownerId },

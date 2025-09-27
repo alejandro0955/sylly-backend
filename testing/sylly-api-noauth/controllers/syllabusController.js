@@ -1,6 +1,12 @@
 const { SyllabusModel } = require('../models/syllabusModel');
 const { extractCalendarEventsFromText } = require('../services/calendarEventService');
 
+async function listSyllabi(req, res) {
+  const owner = req.user;
+  const syllabi = await SyllabusModel.listByOwner(owner.id);
+  res.json({ syllabi });
+}
+
 async function createSyllabus(req, res) {
   const owner = req.user;
   const { title, fileUrl, rawText, school, professor } = req.body;
@@ -48,4 +54,4 @@ async function getSyllabus(req, res) {
   res.json(s);
 }
 
-module.exports = { createSyllabus, parseSyllabus, getSyllabus };
+module.exports = { listSyllabi, createSyllabus, parseSyllabus, getSyllabus };

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
+import { useMySyllabi } from '../hooks/useMySyllabi'
 
 export default function Planner(){
+  const { syllabi, loading: loadingSyllabi, error: syllabiError, refresh: refreshSyllabi } = useMySyllabi()
   const [syllabusId,setSyllabusId]=useState('')
   const [events,setEvents]=useState([])
   const [status,setStatus]=useState('')
@@ -29,10 +31,20 @@ export default function Planner(){
     })()
   },[])
 
+  useEffect(()=>{
+    if(syllabi.length>0){
+      setSyllabusId(prev=>prev || syllabi[0].id)
+    } else {
+      setSyllabusId('')
+    }
+  },[syllabi])
+
+  const activeSyllabus = useMemo(()=>syllabi.find(s=>s.id===syllabusId) || null,[syllabi, syllabusId])
+
   async function plan(e){
     e.preventDefault()
-    if(!syllabusId.trim()){
-      setStatus('Enter a syllabus ID first.')
+    if(!syllabusId){
+      setStatus('Add a syllabus first, then select it here.')
       return
     }
     try{
@@ -40,6 +52,7 @@ export default function Planner(){
       const r=await api.post('/api/planner/plan',{ syllabusId })
       setEvents(r.events || [])
       setStatus(r.events?.length ? `Loaded ${r.events.length} events.` : 'No events found for that syllabus yet.')
+      refreshSyllabi()
     }catch(err){
       setStatus(`Failed to load events: ${err.message}`)
     }
@@ -61,8 +74,8 @@ export default function Planner(){
       setStatus('Connect Google Calendar first.')
       return
     }
-    if(!syllabusId.trim()){
-      setStatus('Enter a syllabus ID to push events for.')
+    if(!syllabusId){
+      setStatus('Select a syllabus to push events for.')
       return
     }
     try{
@@ -88,20 +101,38 @@ export default function Planner(){
         <button type="button" onClick={connectGoogle}>
           {googleConnected?'Reconnect Google Calendar':'Connect Google Calendar'}
         </button>
-        <button type="button" onClick={pushToGoogle} disabled={!googleConnected}>
+        <button type="button" onClick={pushToGoogle} disabled={!googleConnected || !syllabusId}>
           Add events to Google Calendar
         </button>
       </div>
     </div>
     <form onSubmit={plan} className="card">
-      <div className="row">
-        <input placeholder="Syllabus ID" value={syllabusId} onChange={e=>setSyllabusId(e.target.value)} style={{width:'60%'}} />
-        <button type="submit">Fetch Calendar Events</button>
+      <div className="grid" style={{gap:12}}>
+        <div className="row" style={{gap:12, alignItems:'center'}}>
+          <label className="muted" htmlFor="syllabus-select">Course</label>
+          <select
+            id="syllabus-select"
+            value={syllabusId}
+            onChange={e=>setSyllabusId(e.target.value)}
+            disabled={loadingSyllabi || syllabi.length===0}
+            style={{minWidth:'260px'}}
+          >
+            {syllabi.length===0 && <option value="">No syllabi yet</option>}
+            {syllabi.map((s)=> (
+              <option key={s.id} value={s.id}>
+                {s.title || 'Untitled'}{s.professor ? ` · ${s.professor}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        {syllabiError && <div className="text-sm text-red-600">{syllabiError}</div>}
+        {loadingSyllabi && <div className="muted">Loading courses...</div>}
+        <button type="submit" disabled={!syllabusId}>Fetch Calendar Events</button>
+        {status && <div className="muted" style={{marginTop:4}}>{status}</div>}
       </div>
-      {status && <div className="muted" style={{marginTop:12}}>{status}</div>}
     </form>
     {events.length>0 && <div className="card">
-      <h3>Calendar Events</h3>
+      <h3>Calendar Events {activeSyllabus ? `for ${activeSyllabus.title || 'Untitled'}` : ''}</h3>
       <table><thead><tr><th>Title</th><th>Start</th><th>End</th></tr></thead><tbody>
         {events.map((evt,i)=>(<tr key={i}>
           <td>{evt.summary}</td>

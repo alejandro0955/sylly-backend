@@ -2,10 +2,18 @@ import React, { useMemo, useState } from "react";
 import { api } from "../api/client";
 import FileDropAndParse from "../components/filedrop";
 import { useSchools } from "../hooks/useSchools";
+import { useMySyllabi } from "../hooks/useMySyllabi";
 
 export default function Syllabi() {
   const { schools, loading: loadingSchools, error: schoolsError } = useSchools();
   const sortedSchools = useMemo(() => [...schools].sort((a, b) => a.localeCompare(b)), [schools]);
+
+  const {
+    syllabi: mySyllabi,
+    loading: loadingMySyllabi,
+    error: mySyllabiError,
+    refresh: refreshMySyllabi,
+  } = useMySyllabi();
 
   const [title, setTitle] = useState("My Course");
   const [school, setSchool] = useState("");
@@ -18,10 +26,15 @@ export default function Syllabi() {
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState("");
 
+  const matchedSchool = useMemo(() => {
+    if (!school) return null;
+    return schools.find((s) => s.toLowerCase() === school.toLowerCase()) || null;
+  }, [school, schools]);
+
   async function create(e) {
     e.preventDefault();
-    if (!school.trim()) {
-      setStatus("Select a school before saving.");
+    if (!matchedSchool) {
+      setStatus("Choose a school from the list.");
       return;
     }
     if (!professor.trim()) {
@@ -30,12 +43,6 @@ export default function Syllabi() {
     }
     if (!rawText.trim()) {
       setStatus("Provide syllabus text first.");
-      return;
-    }
-
-    const matchedSchool = schools.find((s) => s.toLowerCase() === school.toLowerCase());
-    if (!matchedSchool) {
-      setStatus("Choose a school from the list.");
       return;
     }
 
@@ -48,6 +55,7 @@ export default function Syllabi() {
       setSchool(matchedSchool);
       setEvents(Array.isArray(s.eventsJson) ? s.eventsJson : []);
       setStatus("Syllabus saved. Parse it to generate calendar events.");
+      refreshMySyllabi();
     } catch (err) {
       setStatus(`Failed to save syllabus: ${err.message}`);
     }
@@ -69,11 +77,12 @@ export default function Syllabi() {
     }
   }
 
-  async function fetchS() {
-    if (!id) return;
+  async function fetchS(targetId = id) {
+    if (!targetId) return;
     setStatus("Fetching syllabus...");
     try {
-      const s = await api.get(`/api/syllabi/${id}`);
+      const s = await api.get(`/api/syllabi/${targetId}`);
+      setId(s.id);
       setSyllabus(s);
       setTitle(s.title || "");
       setSchool(s.school || "");
@@ -154,19 +163,57 @@ export default function Syllabi() {
           </div>
         )}
       </div>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <h3>My uploaded syllabi</h3>
+        {loadingMySyllabi && <div className="muted">Loading...</div>}
+        {mySyllabiError && <div className="text-sm text-red-600">{mySyllabiError}</div>}
+        {!loadingMySyllabi && !mySyllabiError && mySyllabi.length === 0 && (
+          <div className="muted">You haven't uploaded any syllabi yet.</div>
+        )}
+        {!loadingMySyllabi && mySyllabi.length > 0 && (
+          <table style={{ width: '100%', marginTop: 8 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Course</th>
+                <th style={{ textAlign: 'left' }}>Professor</th>
+                <th style={{ textAlign: 'left' }}>School</th>
+                <th style={{ textAlign: 'left' }}>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {mySyllabi.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.title || 'Untitled'}</td>
+                  <td>{item.professor || '—'}</td>
+                  <td>{item.school || '—'}</td>
+                  <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button type="button" onClick={() => fetchS(item.id)}>
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
       {!!id && (
         <div className="card">
-          <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+          <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
             <div>
               Created id: <code>{id}</code>
             </div>
             <div className="muted text-sm">
-              {school && professor ? `${school} · ${professor}` : ""}
+              {school && professor ? `${school} · ${professor}` : ''}
             </div>
             <button onClick={parse} disabled={!rawText.trim()}>
               Generate calendar events
             </button>
-            <button onClick={fetchS}>Refresh from API</button>
+            <button onClick={() => fetchS(id)}>Refresh from API</button>
           </div>
         </div>
       )}
@@ -186,9 +233,9 @@ export default function Syllabi() {
               {events.map((evt, i) => (
                 <tr key={i}>
                   <td>{evt.summary}</td>
-                  <td>{evt.start?.dateTime || evt.start?.date || ""}</td>
-                  <td>{evt.end?.dateTime || evt.end?.date || ""}</td>
-                  <td>{evt.location || ""}</td>
+                  <td>{evt.start?.dateTime || evt.start?.date || ''}</td>
+                  <td>{evt.end?.dateTime || evt.end?.date || ''}</td>
+                  <td>{evt.location || ''}</td>
                 </tr>
               ))}
             </tbody>
