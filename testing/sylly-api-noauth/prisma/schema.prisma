@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  auth0Id     String       @unique
+  email       String       @unique
+  name        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  syllabi     Syllabus[]
+  tasks       Task[]
+  constraints Constraint[]
+  integration Integration?
+}
+
+model Syllabus {
+  id         String         @id @default(cuid())
+  owner      User           @relation(fields: [ownerId], references: [id])
+  ownerId    String
+  title      String
+  fileUrl    String?
+  rawText    String?
+  parsedAt   DateTime?
+  items      SyllabusItem[]
+  visibility Visibility     @default(PRIVATE)
+  createdAt  DateTime       @default(now())
+}
+
+enum Visibility {
+  PRIVATE
+  SCHOOL
+  PUBLIC
+}
+
+enum ItemType {
+  LECTURE
+  READING
+  HOMEWORK
+  PROJECT
+  EXAM
+  QUIZ
+  OTHER
+}
+
+model SyllabusItem {
+  id          String    @id @default(cuid())
+  syllabus    Syllabus  @relation(fields: [syllabusId], references: [id])
+  syllabusId  String
+  type        ItemType
+  title       String
+  description String?
+  dueDate     DateTime?
+  weight      Float?
+  sourceText  String?
+  Task        Task[]
+}
+
+model Task {
+  id           String        @id @default(cuid())
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String
+  item         SyllabusItem? @relation(fields: [itemId], references: [id])
+  itemId       String?
+  title        String
+  start        DateTime
+  end          DateTime
+  flexible     Boolean       @default(true)
+  hardDeadline DateTime?
+  calendarId   String?
+  createdAt    DateTime      @default(now())
+}
+
+model Constraint {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+}
+
+model Integration {
+  id            String  @id @default(cuid())
+  user          User    @relation(fields: [userId], references: [id])
+  userId        String  @unique
+  googleRefresh String?
+  googleEmail   String?
+}

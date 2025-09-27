@@ -21,7 +21,7 @@ server.use(express.json());
 // auth router attaches /login, /logout, and /callback routes to the baseURL
 
 // server.use("/api/users", auth(config), userRoutes);
-server.use("/api/generic", auth(config), genericRoutes);
+server.use("/api/generic", genericRoutes);
 
 server.use(errorHandler);
 
