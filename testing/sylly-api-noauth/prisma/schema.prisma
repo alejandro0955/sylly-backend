@@ -27,6 +27,7 @@ model Syllabus {
   title      String
   fileUrl    String?
   rawText    String?
+  eventsJson Json?
   parsedAt   DateTime?
   items      SyllabusItem[]
   visibility Visibility     @default(PRIVATE)
