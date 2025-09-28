@@ -14,15 +14,25 @@ function getConfig() {
     GOOGLE_CLIENT_SECRET,
     GOOGLE_OAUTH_REDIRECT_URI,
     GOOGLE_OAUTH_SUCCESS_REDIRECT,
+    FRONTEND_URL,
   } = process.env;
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_OAUTH_REDIRECT_URI) {
     throw new Error("Missing Google OAuth environment variables.");
   }
+  const redirectUri = (GOOGLE_OAUTH_REDIRECT_URI || "").trim();
+  if (!redirectUri) {
+    throw new Error("GOOGLE_OAUTH_REDIRECT_URI is empty.");
+  }
+  const successRedirectRaw = (GOOGLE_OAUTH_SUCCESS_REDIRECT || FRONTEND_URL || "").trim();
+  if (!successRedirectRaw) {
+    throw new Error("Missing Google OAuth success redirect environment variable. Set GOOGLE_OAUTH_SUCCESS_REDIRECT or FRONTEND_URL.");
+  }
+  const successRedirect = successRedirectRaw.replace(/\/+$/, "");
   return {
     clientId: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    redirectUri: GOOGLE_OAUTH_REDIRECT_URI,
-    successRedirect: GOOGLE_OAUTH_SUCCESS_REDIRECT || "http://localhost:5173",
+    redirectUri,
+    successRedirect,
   };
 }
 
