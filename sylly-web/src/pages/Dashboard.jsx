@@ -64,27 +64,75 @@ export default function Dashboard(){
     return ()=>{ cancelled = true }
   },[isAuthenticated, getAccessTokenSilently])
 
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return 'TBD';
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'TBD';
+
+    const now = new Date();
+    const diffInMs = date.getTime() - now.getTime();
+    const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Tomorrow';
+    if (diffInDays > 1 && diffInDays <= 7) return `In ${diffInDays} days`;
+    if (diffInDays < 0 && diffInDays >= -1) return 'Recently passed';
+    return date.toLocaleDateString();
+  };
+
+  const getEventIcon = (summary) => {
+    const s = summary.toLowerCase();
+    if (s.includes('exam') || s.includes('test') || s.includes('midterm') || s.includes('final')) return '📝';
+    if (s.includes('assignment') || s.includes('homework') || s.includes('project')) return '📋';
+    if (s.includes('lecture') || s.includes('class')) return '🎓';
+    if (s.includes('quiz')) return '❓';
+    if (s.includes('lab')) return '🔬';
+    if (s.includes('presentation')) return '📊';
+    return '📅';
+  };
+
   return (
     <div>
       <h2>Dashboard</h2>
       <div className="card">
-        <h3>Upcoming events</h3>
-        {loading && <div className="muted">Loading...</div>}
-        {error && !loading && <div className="text-sm text-red-600">{error}</div>}
+        <h3>📅 Upcoming Events</h3>
+        {loading && (
+          <div className="empty-state">
+            <div className="loading-skeleton" style={{ height: '20px', width: '200px', margin: '0 auto' }}></div>
+            <div className="muted" style={{ marginTop: 8 }}>Loading your schedule...</div>
+          </div>
+        )}
+        {error && !loading && (
+          <div className="status-error">
+            <strong>Unable to load events</strong><br />
+            {error}
+          </div>
+        )}
         {!loading && !error && events.length === 0 && (
-          <div className="muted">No upcoming events yet. Generate a schedule from one of your syllabi.</div>
+          <div className="empty-state">
+            <h3>No upcoming events</h3>
+            <p>Generate a schedule from one of your syllabi to see your upcoming assignments and exams here.</p>
+          </div>
         )}
         {!loading && events.length > 0 && (
-          <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0 0', display: 'grid', gap: '12px' }}>
+          <div style={{ display: 'grid', gap: '16px', marginTop: '16px' }}>
             {events.map((event, index) => (
-              <li key={`${event.syllabusId}-${index}`} className="card" style={{ margin: 0 }}>
-                <div className="muted text-sm" style={{ marginBottom: 4 }}>{event.syllabusTitle || 'Untitled course'}</div>
-                <div style={{ fontWeight: 600 }}>{event.summary}</div>
-                <div className="muted text-sm" style={{ marginTop: 4 }}>{formatDateRange(event)}</div>
-                {event.location && <div className="muted text-sm">{event.location}</div>}
-              </li>
+              <div key={`${event.syllabusId}-${index}`} className="event-card">
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div className="badge">{event.syllabusTitle || 'Untitled Course'}</div>
+                  <div className="muted text-sm">{formatRelativeTime(event.start?.dateTime || event.start?.date)}</div>
+                </div>
+                <div className="row" style={{ gap: '12px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '20px' }}>{getEventIcon(event.summary)}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '16px', marginBottom: '4px' }}>{event.summary}</div>
+                    <div className="muted text-sm">{formatDateRange(event)}</div>
+                    {event.location && <div className="muted text-sm">📍 {event.location}</div>}
+                  </div>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

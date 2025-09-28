@@ -124,25 +124,32 @@ export default function Syllabi() {
     <div>
       <h2>Syllabi</h2>
       <div className="card">
-        <form onSubmit={create} className="grid" style={{ gap: 12 }}>
-          <div className="row" style={{ gap: 12 }}>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Course title"
-              style={{ flex: 1 }}
-            />
-            <button type="submit" disabled={!rawText.trim() || !school.trim() || !professor.trim() || !fileData}>
-              Save syllabus
-            </button>
-          </div>
-          <div className="row" style={{ gap: 12 }}>
+        <h3>📚 Upload New Syllabus</h3>
+        <form onSubmit={create} className="grid" style={{ gap: 16 }}>
+          <div className="row" style={{ gap: 16 }}>
+            <div style={{ flex: 2 }}>
+              <label htmlFor="course-title">Course Title</label>
+              <input
+                id="course-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Introduction to Computer Science"
+                required
+              />
+            </div>
             <div style={{ flex: 1 }}>
-              <label className="muted" htmlFor="school-input">School</label>
+              <button type="submit" disabled={!rawText.trim() || !school.trim() || !professor.trim() || !fileData} style={{ height: '46px', marginTop: '22px' }}>
+                💾 Save Syllabus
+              </button>
+            </div>
+          </div>
+          <div className="row" style={{ gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="school-input">🏫 School</label>
               <input
                 id="school-input"
                 list="school-options"
-                placeholder={loadingSchools ? "Loading schools..." : "Start typing your school"}
+                placeholder={loadingSchools ? "Loading schools..." : "Start typing your school name"}
                 value={school}
                 onChange={(e) => setSchool(e.target.value)}
                 disabled={loadingSchools}
@@ -153,13 +160,13 @@ export default function Syllabi() {
                   <option key={s} value={s} />
                 ))}
               </datalist>
-              {schoolsError && <div className="text-sm text-red-600">{schoolsError}</div>}
+              {schoolsError && <div className="status-error">{schoolsError}</div>}
             </div>
             <div style={{ flex: 1 }}>
-              <label className="muted" htmlFor="prof-input">Professor</label>
+              <label htmlFor="prof-input">👨‍🏫 Professor</label>
               <input
                 id="prof-input"
-                placeholder="Professor name"
+                placeholder="Professor's full name"
                 value={professor}
                 onChange={(e) => setProfessor(e.target.value)}
                 required
@@ -167,61 +174,72 @@ export default function Syllabi() {
             </div>
           </div>
         </form>
-        <p style={{ marginTop: 12 }}>
-          Upload a syllabus PDF and we'll extract the text automatically.
-        </p>
-        <div style={{ marginTop: 12 }}>
+
+        <div style={{ marginTop: 24, padding: '20px', background: 'var(--gray-50)', borderRadius: 'var(--border-radius)', border: '2px dashed var(--gray-300)' }}>
+          <h4 style={{ margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            📄 Upload Syllabus PDF
+          </h4>
+          <p className="muted" style={{ margin: '0 0 16px 0' }}>
+            Drop your PDF here and we'll automatically extract the text content for processing.
+          </p>
           <FileDropAndParse
             initialText={rawText}
             onTextChange={setRawText}
             onFileData={setFileData}
             variant="compact"
-            heading="Extract syllabus text"
-            subheading="Drop a PDF to populate the syllabus automatically."
+            heading=""
+            subheading=""
             showTextArea={false}
           />
         </div>
+
         {status && (
-          <div style={{ marginTop: 12 }} className="muted">
+          <div className={status.includes('Failed') || status.includes('Error') ? 'status-error' : status.includes('saved') || status.includes('Generated') ? 'status-success' : 'status-warning'} style={{ marginTop: 16 }}>
             {status}
           </div>
         )}
       </div>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <h3>My uploaded syllabi</h3>
-        {loadingMySyllabi && <div className="muted">Loading...</div>}
-        {mySyllabiError && <div className="text-sm text-red-600">{mySyllabiError}</div>}
+        <h3>📋 My Uploaded Syllabi</h3>
+        {loadingMySyllabi && (
+          <div className="empty-state">
+            <div className="loading-skeleton" style={{ height: '20px', width: '200px', margin: '0 auto' }}></div>
+            <div className="muted" style={{ marginTop: 8 }}>Loading your syllabi...</div>
+          </div>
+        )}
+        {mySyllabiError && <div className="status-error">{mySyllabiError}</div>}
         {!loadingMySyllabi && !mySyllabiError && mySyllabi.length === 0 && (
-          <div className="muted">You have not uploaded any syllabi yet.</div>
+          <div className="empty-state">
+            <h3>No syllabi uploaded yet</h3>
+            <p>Upload your first syllabus above to get started with automatic event extraction and calendar planning.</p>
+          </div>
         )}
         {!loadingMySyllabi && mySyllabi.length > 0 && (
-          <table style={{ width: '100%', marginTop: 8 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left' }}>Course</th>
-                <th style={{ textAlign: 'left' }}>Professor</th>
-                <th style={{ textAlign: 'left' }}>School</th>
-                <th style={{ textAlign: 'left' }}>Created</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {mySyllabi.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.title || 'Untitled'}</td>
-                  <td>{item.professor || '-'}</td>
-                  <td>{item.school || '-'}</td>
-                  <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button type="button" onClick={() => togglePreview(item)}>
-                      {previewId === item.id ? 'Close PDF' : 'Open PDF'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'grid', gap: '16px', marginTop: '16px' }}>
+            {mySyllabi.map((item) => (
+              <div key={item.id} className="card" style={{ margin: 0, padding: '20px' }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+                      {item.title || 'Untitled Course'}
+                    </h4>
+                    <div className="muted text-sm" style={{ marginTop: '4px' }}>
+                      👨‍🏫 {item.professor || 'No professor'} • 🏫 {item.school || 'No school'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="badge">{new Date(item.createdAt).toLocaleDateString()}</div>
+                    <div style={{ marginTop: '8px' }}>
+                      <button type="button" onClick={() => togglePreview(item)} style={{ fontSize: '13px', padding: '8px 16px' }}>
+                        {previewId === item.id ? '❌ Close PDF' : '📄 View PDF'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </section>
 
@@ -243,42 +261,55 @@ export default function Syllabi() {
 
       {!!id && (
         <div className="card" style={{ marginTop: 16 }}>
-          <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <div>
-              Created id: <code>{id}</code>
+          <h3>🤖 Generate Calendar Events</h3>
+          <div style={{ background: 'var(--primary-50)', padding: '16px', borderRadius: 'var(--border-radius)', marginBottom: '16px' }}>
+            <div className="row" style={{ gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div>
+                <strong>Syllabus ID:</strong> <code>{id}</code>
+              </div>
+              {school && professor && (
+                <div className="muted">
+                  📚 {school} - {professor}
+                </div>
+              )}
             </div>
-            <div className="muted text-sm">
-              {school && professor ? `${school} - ${professor}` : ''}
-            </div>
-            <button onClick={parse} disabled={!rawText.trim()}>
-              Generate calendar events
-            </button>
           </div>
+          <button onClick={parse} disabled={!rawText.trim()} style={{ width: '100%' }}>
+            ✨ Generate Calendar Events with AI
+          </button>
         </div>
       )}
+
       {eventCount > 0 && (
-        <div className="card">
-          <h3>Extracted Calendar Events</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((evt, i) => (
-                <tr key={i}>
-                  <td>{evt.summary}</td>
-                  <td>{evt.start?.dateTime || evt.start?.date || ''}</td>
-                  <td>{evt.end?.dateTime || evt.end?.date || ''}</td>
-                  <td>{evt.location || ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>📅 Extracted Calendar Events ({eventCount})</h3>
+          <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
+            {events.map((evt, i) => (
+              <div key={i} className="event-card" style={{ margin: 0 }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '16px' }}>{evt.summary}</div>
+                  <div className="badge">Event {i + 1}</div>
+                </div>
+                <div className="grid" style={{ gap: '4px' }}>
+                  {(evt.start?.dateTime || evt.start?.date) && (
+                    <div className="muted text-sm">
+                      📅 Start: {evt.start.dateTime || evt.start.date}
+                    </div>
+                  )}
+                  {(evt.end?.dateTime || evt.end?.date) && (
+                    <div className="muted text-sm">
+                      🏁 End: {evt.end.dateTime || evt.end.date}
+                    </div>
+                  )}
+                  {evt.location && (
+                    <div className="muted text-sm">
+                      📍 Location: {evt.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

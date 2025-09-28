@@ -43,35 +43,77 @@ export default function Chat(){
   return (
     <div>
       <h2>Chat</h2>
-      <form onSubmit={ask} className="card">
-        <div className="grid" style={{gap:12}}>
-          <div className="row" style={{gap:12,alignItems:'center'}}>
-            <label className="muted" htmlFor="chat-syllabus">Course</label>
+      <div className="card">
+        <h3>💬 Ask Questions About Your Syllabi</h3>
+        <p className="muted" style={{ marginBottom: '20px' }}>
+          Get instant answers about course requirements, due dates, grading policies, and more from your uploaded syllabi.
+        </p>
+
+        <form onSubmit={ask} className="grid" style={{gap: 20}}>
+          <div>
+            <label htmlFor="chat-syllabus">📚 Select Course</label>
             <select
               id="chat-syllabus"
               value={syllabusId}
               onChange={e=>setSyllabusId(e.target.value)}
               disabled={loadingSyllabi || syllabi.length===0}
-              style={{minWidth:'240px'}}
+              style={{ width: '100%' }}
             >
-              {syllabi.length===0 && <option value="">No syllabi yet</option>}
+              {syllabi.length===0 && <option value="">No syllabi uploaded yet</option>}
               {syllabi.map((s)=>(
                 <option key={s.id} value={s.id}>
                   {s.title || 'Untitled'}{s.professor ? ` - ${s.professor}` : ''}
                 </option>
               ))}
             </select>
+            {syllabiError && <div className="status-error">{syllabiError}</div>}
           </div>
-          {syllabiError && <div className="text-sm text-red-600">{syllabiError}</div>}
-          <input placeholder="Your question" value={question} onChange={e=>setQuestion(e.target.value)} style={{width:'100%'}} />
-          <button type="submit" disabled={!syllabusId}>Ask</button>
-          {status && <div className="muted">{status}</div>}
+
+          <div>
+            <label htmlFor="question-input">❓ Your Question</label>
+            <input
+              id="question-input"
+              placeholder="e.g., When is the midterm exam? What's the grading policy?"
+              value={question}
+              onChange={e=>setQuestion(e.target.value)}
+              style={{width:'100%'}}
+            />
+          </div>
+
+          <button type="submit" disabled={!syllabusId || !question.trim()} style={{ width: '100%' }}>
+            🚀 Ask Question
+          </button>
+
+          {status && (
+            <div className={status.includes('Failed') ? 'status-error' : status.includes('Thinking') ? 'status-warning' : 'muted'}>
+              {status}
+            </div>
+          )}
+        </form>
+      </div>
+
+      {answer && (
+        <div className="card" style={{ marginTop: '20px' }}>
+          <h3>💡 Answer{activeSyllabus ? ` - ${activeSyllabus.title || 'Untitled'}` : ''}</h3>
+          <div style={{
+            background: 'var(--gray-50)',
+            padding: '20px',
+            borderRadius: 'var(--border-radius)',
+            border: '1px solid var(--gray-200)',
+            marginTop: '16px'
+          }}>
+            <pre style={{
+              margin: 0,
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+              lineHeight: '1.6'
+            }}>
+              {JSON.stringify(answer, null, 2)}
+            </pre>
+          </div>
         </div>
-      </form>
-      {answer && <div className="card">
-        <h3>Answer{activeSyllabus ? ` - ${activeSyllabus.title || 'Untitled'}` : ''}</h3>
-        <pre>{JSON.stringify(answer,null,2)}</pre>
-      </div>}
+      )}
     </div>
   )
 }

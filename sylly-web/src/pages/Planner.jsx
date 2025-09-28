@@ -171,102 +171,151 @@ export default function Planner(){
     <div>
       <h2>Planner</h2>
       <div className="card" style={{marginBottom:16}}>
-        <h3>Google Calendar</h3>
-        <div className="row" style={{gap:12, alignItems:'center'}}>
-          <span className="muted">{googleConnected?`Connected${googleEmail?` as ${googleEmail}`:''}`:'Not connected'}</span>
-          <button type="button" onClick={connectGoogle}>
-            {googleConnected?'Reconnect Google Calendar':'Connect Google Calendar'}
-          </button>
-          <button type="button" onClick={pushToGoogle} disabled={!googleConnected || !syllabusId}>
-            Add events to Google Calendar
-          </button>
+        <h3>📅 Google Calendar Integration</h3>
+        <p className="muted" style={{ marginBottom: '16px' }}>
+          Connect your Google Calendar to automatically sync your course events and suggested study sessions.
+        </p>
+        <div style={{
+          background: googleConnected ? 'var(--success-50)' : 'var(--warning-50)',
+          border: `1px solid ${googleConnected ? 'var(--success-100)' : 'var(--warning-100)'}`,
+          borderRadius: 'var(--border-radius)',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div className="row" style={{gap: 12, alignItems:'center', justifyContent: 'space-between'}}>
+            <div>
+              <div style={{ fontWeight: 600, color: googleConnected ? 'var(--success-700)' : 'var(--warning-700)' }}>
+                {googleConnected ? '✅ Connected' : '⚠️ Not Connected'}
+              </div>
+              {googleEmail && (
+                <div className="muted text-sm" style={{ marginTop: '4px' }}>
+                  📧 {googleEmail}
+                </div>
+              )}
+            </div>
+            <div className="row" style={{ gap: 12 }}>
+              <button type="button" onClick={connectGoogle}>
+                {googleConnected ? '🔄 Reconnect' : '🔗 Connect Google Calendar'}
+              </button>
+              <button type="button" onClick={pushToGoogle} disabled={!googleConnected || !syllabusId}>
+                📤 Sync Events
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <form onSubmit={plan} className="card">
-        <div className="grid" style={{gap:12}}>
-          <div className="row" style={{gap:12, alignItems:'center'}}>
-            <label className="muted" htmlFor="syllabus-select">Course</label>
+      <div className="card">
+        <h3>📚 Course Events</h3>
+        <p className="muted" style={{ marginBottom: '16px' }}>
+          Load or generate calendar events from your uploaded syllabi.
+        </p>
+        <form onSubmit={plan} className="grid" style={{gap: 16}}>
+          <div>
+            <label htmlFor="syllabus-select">Select Course</label>
             <select
               id="syllabus-select"
               value={syllabusId}
               onChange={e=>setSyllabusId(e.target.value)}
               disabled={loadingSyllabi || syllabi.length===0}
-              style={{minWidth:'260px'}}
+              style={{ width: '100%' }}
             >
-              {syllabi.length===0 && <option value="">No syllabi yet</option>}
+              {syllabi.length===0 && <option value="">No syllabi uploaded yet</option>}
               {syllabi.map((s)=> (
                 <option key={s.id} value={s.id}>
                   {s.title || 'Untitled'}{s.professor ? ` - ${s.professor}` : ''}
                 </option>
               ))}
             </select>
+            {syllabiError && <div className="status-error">{syllabiError}</div>}
+            {loadingSyllabi && <div className="muted">Loading courses...</div>}
           </div>
-          {syllabiError && <div className="text-sm text-red-600">{syllabiError}</div>}
-          {loadingSyllabi && <div className="muted">Loading courses...</div>}
-          <button type="submit" disabled={!syllabusId}>Fetch Calendar Events</button>
-          {status && <div className="muted" style={{marginTop:4}}>{status}</div>}
-        </div>
-      </form>
+          <button type="submit" disabled={!syllabusId} style={{ width: '100%' }}>
+            📅 Fetch Calendar Events
+          </button>
+          {status && (
+            <div className={status.includes('Failed') ? 'status-error' : status.includes('Loading') ? 'status-warning' : 'status-success'}>
+              {status}
+            </div>
+          )}
+        </form>
+      </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <h3>Suggested Study Sessions</h3>
-        <form className="row" style={{ gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }} onSubmit={suggestStudy}>
-          <div>
-            <label className="muted" htmlFor="session-minutes">Session length (minutes)</label>
-            <input
-              id="session-minutes"
-              type="number"
-              min="15"
-              max="240"
-              step="15"
-              value={sessionMinutes}
-              onChange={(e) => setSessionMinutes(e.target.value)}
-              style={{ width: 120 }}
-            />
+        <h3>🧠 AI Study Session Planner</h3>
+        <p className="muted" style={{ marginBottom: '20px' }}>
+          Let AI suggest optimal study sessions based on your calendar and course schedule.
+        </p>
+
+        <form onSubmit={suggestStudy} className="grid" style={{ gap: 20 }}>
+          <div className="row" style={{ gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="session-minutes">⏱️ Session Length (minutes)</label>
+              <input
+                id="session-minutes"
+                type="number"
+                min="15"
+                max="240"
+                step="15"
+                value={sessionMinutes}
+                onChange={(e) => setSessionMinutes(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="session-count">📊 Number of Sessions</label>
+              <input
+                id="session-count"
+                type="number"
+                min="1"
+                max="20"
+                value={sessionCount}
+                onChange={(e) => setSessionCount(e.target.value)}
+              />
+            </div>
           </div>
-          <div>
-            <label className="muted" htmlFor="session-count">Sessions</label>
-            <input
-              id="session-count"
-              type="number"
-              min="1"
-              max="20"
-              value={sessionCount}
-              onChange={(e) => setSessionCount(e.target.value)}
-              style={{ width: 120 }}
-            />
+
+          <div className="row" style={{ gap: 12 }}>
+            <button type="submit" disabled={suggestLoading || !syllabusId} style={{ flex: 1 }}>
+              {suggestLoading ? '🔄 Calculating...' : '✨ Suggest Study Sessions'}
+            </button>
+            <button
+              type="button"
+              onClick={pushStudySessions}
+              disabled={!googleConnected || suggestions.length===0 || suggestLoading}
+              style={{ flex: 1 }}
+            >
+              📤 Add to Google Calendar
+            </button>
           </div>
-          <button type="submit" disabled={suggestLoading || !syllabusId}>
-            {suggestLoading ? 'Calculating...' : 'Suggest Study Sessions'}
-          </button>
-          <button
-            type="button"
-            onClick={pushStudySessions}
-            disabled={!googleConnected || suggestions.length===0 || suggestLoading}
-          >
-            Add study sessions to Google Calendar
-          </button>
         </form>
-        {suggestStatus && <div className="muted" style={{ marginTop: 12 }}>{suggestStatus}</div>}
-        {suggestions.length>0 && (
-          <table style={{ width: '100%', marginTop: 16 }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left' }}>Summary</th>
-                <th style={{ textAlign: 'left' }}>Start</th>
-                <th style={{ textAlign: 'left' }}>End</th>
-              </tr>
-            </thead>
-            <tbody>
+
+        {suggestStatus && (
+          <div className={suggestStatus.includes('Failed') ? 'status-error' : suggestStatus.includes('Calculating') ? 'status-warning' : 'status-success'} style={{ marginTop: 16 }}>
+            {suggestStatus}
+          </div>
+        )}
+
+        {suggestions.length > 0 && (
+          <div style={{ marginTop: '24px' }}>
+            <h4 style={{ marginBottom: '16px' }}>📅 Suggested Sessions ({suggestions.length})</h4>
+            <div style={{ display: 'grid', gap: '12px' }}>
               {suggestions.map((event, index) => (
-                <tr key={`${event.summary}-${index}`}>
-                  <td>{event.summary}</td>
-                  <td>{formatDateTime(event.start?.dateTime || event.start?.date)}</td>
-                  <td>{formatDateTime(event.end?.dateTime || event.end?.date)}</td>
-                </tr>
+                <div key={`${event.summary}-${index}`} className="event-card" style={{ margin: 0 }}>
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div style={{ fontWeight: 600, fontSize: '16px' }}>{event.summary}</div>
+                    <div className="badge">Session {index + 1}</div>
+                  </div>
+                  <div className="row" style={{ gap: '16px' }}>
+                    <div className="muted text-sm">
+                      🕐 {formatDateTime(event.start?.dateTime || event.start?.date)}
+                    </div>
+                    <div className="muted text-sm">
+                      🕐 {formatDateTime(event.end?.dateTime || event.end?.date)}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         )}
       </div>
 
