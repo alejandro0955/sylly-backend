@@ -11,6 +11,7 @@ export default function PublicSearch({ compact = false }) {
   const [status, setStatus] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [previewId, setPreviewId] = useState(null);
 
   const sortedSchools = useMemo(() => [...schools].sort((a, b) => a.localeCompare(b)), [schools]);
   const matchedSchool = useMemo(() => {
@@ -66,13 +67,23 @@ export default function PublicSearch({ compact = false }) {
       const resp = await api.get(`/api/public/syllabi?${params.toString()}`);
       setResults(resp.syllabi?.map((item) => ({ ...item, school: matchedSchool })) || []);
       setStatus(resp.count ? `Found ${resp.count} syllabus${resp.count === 1 ? "" : "es"}.` : "No syllabi found yet.");
+      setPreviewId(null);
     } catch (err) {
       setStatus(`Search failed: ${err.message}`);
       setResults([]);
+      setPreviewId(null);
     } finally {
       setSearching(false);
     }
   }
+
+  const togglePreview = (item) => {
+    if (previewId === item.id) {
+      setPreviewId(null);
+    } else {
+      setPreviewId(item.id);
+    }
+  };
 
   return (
     <section className={compact ? "card" : "card"} style={compact ? {} : { marginTop: 24 }}>
@@ -120,7 +131,7 @@ export default function PublicSearch({ compact = false }) {
                 <option key={p} value={p} />
               ))}
             </datalist>
-            {loadingProfessors && <div className="text-sm muted">Loading professors…</div>}
+            {loadingProfessors && <div className="text-sm muted">Loading professors...</div>}
           </div>
         </div>
         <div className="row" style={{ justifyContent: "flex-end", gap: 12 }}>
@@ -140,14 +151,25 @@ export default function PublicSearch({ compact = false }) {
                   <span className="muted text-sm">{new Date(item.createdAt).toLocaleDateString()}</span>
                 </header>
                 <div className="muted text-sm" style={{ marginTop: 4 }}>
-                  <strong>{item.professor}</strong> &middot; {item.school}
+                  <strong>{item.professor}</strong> - {item.school}
                 </div>
-                <details style={{ marginTop: 8 }}>
-                  <summary className="muted">View syllabus text</summary>
-                  <pre style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>
-                    {item.rawTextPreview || item.rawText || "No text extracted yet."}
-                  </pre>
-                </details>
+                
+                {item.fileUrl && (
+                  <div style={{ marginTop: 8 }}>
+                    <button type="button" onClick={() => togglePreview(item)}>
+                      {previewId === item.id ? 'Close PDF' : 'Open PDF'}
+                    </button>
+                  </div>
+                )}
+                {previewId === item.id && item.fileUrl && (
+                  <div style={{ marginTop: 12 }}>
+                    <iframe
+                      title={`Shared syllabus ${item.id}`}
+                      src={item.fileUrl}
+                      style={{ width: '100%', height: '500px', border: '1px solid #ddd', borderRadius: '8px' }}
+                    />
+                  </div>
+                )}
               </article>
             ))}
           </div>

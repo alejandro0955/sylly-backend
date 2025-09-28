@@ -16,6 +16,9 @@ async function createSyllabus(req, res) {
   if (!professor) {
     return res.status(400).json({ error: 'professor is required' });
   }
+  if (!fileUrl) {
+    return res.status(400).json({ error: 'PDF data is required' });
+  }
   const s = await SyllabusModel.create(owner.id, {
     title,
     fileUrl,

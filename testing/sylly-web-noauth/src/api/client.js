@@ -25,8 +25,22 @@ export const api = {
     })
 
     if (!res.ok) {
-      const text = await res.text()
-      throw new Error(text || res.statusText)
+      const raw = await res.text()
+      let message = raw || res.statusText || 'Request failed'
+      let code
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          message = parsed.error || parsed.message || message
+          code = parsed.code
+        } catch (err) {
+          // leave message as-is when body is not JSON
+        }
+      }
+      const error = new Error(message)
+      error.status = res.status
+      if (code) error.code = code
+      throw error
     }
 
     const ct = res.headers.get('content-type') || ''
@@ -37,3 +51,4 @@ export const api = {
   patch: (p, b) => api.request(p, { method: 'PATCH', body: b }),
   del: (p) => api.request(p, { method: 'DELETE' }),
 }
+

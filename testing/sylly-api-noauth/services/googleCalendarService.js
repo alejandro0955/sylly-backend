@@ -159,7 +159,7 @@ async function pushEventsToCalendar(accessToken, events = []) {
       if (!res.ok) {
         failures.push({ summary: event.summary, error: payload.error || payload });
       } else {
-        successes.push({ id: payload.id, summary: payload.summary, htmlLink: payload.htmlLink });
+        successes.push({ id: payload.id, summary: payload.summary, htmlLink: payload.htmlLink, start: payload.start, end: payload.end });
       }
     } catch (err) {
       failures.push({ summary: event.summary, error: err.message });
@@ -167,6 +167,25 @@ async function pushEventsToCalendar(accessToken, events = []) {
   }
 
   return { successes, failures };
+}
+
+async function listCalendarEvents(accessToken, { timeMin, timeMax } = {}) {
+  const params = new URLSearchParams({
+    singleEvents: "true",
+    orderBy: "startTime",
+  });
+  if (timeMin) params.set("timeMin", timeMin.toISOString());
+  if (timeMax) params.set("timeMax", timeMax.toISOString());
+  const url = `${GOOGLE_CALENDAR_EVENTS_ENDPOINT}?${params.toString()}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to load Google Calendar events: ${errorText}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data.items) ? data.items : [];
 }
 
 function buildSuccessRedirect(continuePath) {
@@ -196,5 +215,7 @@ module.exports = {
   refreshAccessToken,
   fetchGoogleProfile,
   pushEventsToCalendar,
+  listCalendarEvents,
   buildSuccessRedirect,
 };
+

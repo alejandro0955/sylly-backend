@@ -45,6 +45,7 @@ const SyllabusModel = {
         title: true,
         school: true,
         professor: true,
+        fileUrl: true,
         rawText: true,
         createdAt: true,
       },
@@ -59,6 +60,59 @@ const SyllabusModel = {
       distinct: ['professor'],
       select: { professor: true },
     }),
+  listEventsForOwner: (ownerId) =>
+    prisma.syllabus.findMany({
+      where: { ownerId },
+      select: {
+        id: true,
+        title: true,
+        eventsJson: true,
+      },
+    }),
+  listUpcomingEvents: async (ownerId, { limit = 10 } = {}) => {
+    const syllabi = await prisma.syllabus.findMany({
+      where: { ownerId },
+      select: {
+        id: true,
+        title: true,
+        eventsJson: true,
+      },
+    });
+
+    const now = new Date();
+    const events = [];
+
+    for (const syllabus of syllabi) {
+      const eventList = Array.isArray(syllabus.eventsJson) ? syllabus.eventsJson : [];
+      for (const event of eventList) {
+        const startValue = event?.start?.dateTime || event?.start?.date;
+        if (!startValue) continue;
+
+        let startDate = null;
+        if (event.start?.dateTime) {
+          startDate = new Date(event.start.dateTime);
+        } else if (event.start?.date) {
+          startDate = new Date(event.start.date + 'T00:00:00');
+        }
+        if (!startDate || Number.isNaN(startDate.getTime())) continue;
+        if (startDate < now) continue;
+
+        events.push({
+          syllabusId: syllabus.id,
+          syllabusTitle: syllabus.title,
+          summary: event.summary || 'Untitled event',
+          start: event.start,
+          end: event.end,
+          location: event.location || '',
+          startDate,
+        });
+      }
+    }
+
+    events.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+    return events.slice(0, limit).map(({ startDate, ...rest }) => rest);
+  },
 };
 
 module.exports = { SyllabusModel };

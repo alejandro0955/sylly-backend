@@ -18,13 +18,13 @@ export default function Syllabi() {
   const [title, setTitle] = useState("My Course");
   const [school, setSchool] = useState("");
   const [professor, setProfessor] = useState("");
-  const [rawText, setRawText] = useState(
-    "Week 1: Reading due 2025-10-01\nMidterm on 2025-10-20 (20%)"
-  );
+  const [rawText, setRawText] = useState("");
+  const [fileData, setFileData] = useState("");
   const [id, setId] = useState("");
-  const [syllabus, setSyllabus] = useState(null);
   const [events, setEvents] = useState([]);
   const [status, setStatus] = useState("");
+  const [previewId, setPreviewId] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const matchedSchool = useMemo(() => {
     if (!school) return null;
@@ -45,14 +45,18 @@ export default function Syllabi() {
       setStatus("Provide syllabus text first.");
       return;
     }
+    if (!fileData) {
+      setStatus("Upload a PDF before saving.");
+      return;
+    }
 
     setStatus("Saving syllabus...");
     try {
-      const payload = { title, rawText, school: matchedSchool, professor };
+      const payload = { title, rawText, school: matchedSchool, professor, fileUrl: fileData };
       const s = await api.post("/api/syllabi", payload);
       setId(s.id);
-      setSyllabus(s);
       setSchool(matchedSchool);
+      setProfessor(s.professor || professor);
       setEvents(Array.isArray(s.eventsJson) ? s.eventsJson : []);
       setStatus("Syllabus saved. Parse it to generate calendar events.");
       refreshMySyllabi();
@@ -68,32 +72,51 @@ export default function Syllabi() {
       const result = await api.post(`/api/syllabi/${id}/parse`, {});
       const nextEvents = result.events || [];
       setEvents(nextEvents);
-      setSyllabus((prev) =>
-        prev ? { ...prev, eventsJson: nextEvents } : { id, eventsJson: nextEvents }
-      );
       setStatus(`Generated ${result.count || 0} events.`);
     } catch (err) {
       setStatus(`Failed to generate events: ${err.message}`);
     }
   }
 
-  async function fetchS(targetId = id) {
-    if (!targetId) return;
-    setStatus("Fetching syllabus...");
+  async function fetchS(targetId, { suppressStatus = false } = {}) {
+    if (!targetId) return null;
+    if (!suppressStatus) setStatus("Fetching syllabus...");
     try {
       const s = await api.get(`/api/syllabi/${targetId}`);
       setId(s.id);
-      setSyllabus(s);
       setTitle(s.title || "");
       setSchool(s.school || "");
       setProfessor(s.professor || "");
       setRawText(s.rawText || "");
+      setFileData(s.fileUrl || "");
       setEvents(Array.isArray(s.eventsJson) ? s.eventsJson : []);
-      setStatus(s.eventsJson?.length ? `Loaded ${s.eventsJson.length} events.` : "No events saved yet.");
+      if (!suppressStatus) {
+        setStatus(s.eventsJson?.length ? `Loaded ${s.eventsJson.length} events.` : "No events saved yet.");
+      }
+      return s;
     } catch (err) {
-      setStatus(`Failed to fetch syllabus: ${err.message}`);
+      if (!suppressStatus) setStatus(`Failed to fetch syllabus: ${err.message}`);
+      return null;
     }
   }
+
+  const togglePreview = async (item) => {
+    if (previewId === item.id) {
+      setPreviewId(null);
+      setPreviewUrl("");
+      return;
+    }
+    const fetched = await fetchS(item.id, { suppressStatus: true });
+    if (fetched?.fileUrl) {
+      setPreviewId(item.id);
+      setPreviewUrl(fetched.fileUrl);
+      setStatus("PDF preview ready.");
+    } else {
+      setPreviewId(null);
+      setPreviewUrl("");
+      setStatus("No PDF available for this syllabus yet.");
+    }
+  };
 
   const eventCount = events.length;
 
@@ -109,7 +132,7 @@ export default function Syllabi() {
               placeholder="Course title"
               style={{ flex: 1 }}
             />
-            <button type="submit" disabled={!rawText.trim() || !school.trim() || !professor.trim()}>
+            <button type="submit" disabled={!rawText.trim() || !school.trim() || !professor.trim() || !fileData}>
               Save syllabus
             </button>
           </div>
@@ -145,16 +168,17 @@ export default function Syllabi() {
           </div>
         </form>
         <p style={{ marginTop: 12 }}>
-          Upload a syllabus file to extract its contents, or edit the text below before saving.
+          Upload a syllabus PDF and we'll extract the text automatically.
         </p>
         <div style={{ marginTop: 12 }}>
           <FileDropAndParse
             initialText={rawText}
             onTextChange={setRawText}
+            onFileData={setFileData}
             variant="compact"
             heading="Extract syllabus text"
-            subheading="Drop a PDF, DOCX, or TXT to populate the syllabus body."
-            footerNote=""
+            subheading="Drop a PDF to populate the syllabus automatically."
+            showTextArea={false}
           />
         </div>
         {status && (
@@ -169,7 +193,7 @@ export default function Syllabi() {
         {loadingMySyllabi && <div className="muted">Loading...</div>}
         {mySyllabiError && <div className="text-sm text-red-600">{mySyllabiError}</div>}
         {!loadingMySyllabi && !mySyllabiError && mySyllabi.length === 0 && (
-          <div className="muted">You haven't uploaded any syllabi yet.</div>
+          <div className="muted">You have not uploaded any syllabi yet.</div>
         )}
         {!loadingMySyllabi && mySyllabi.length > 0 && (
           <table style={{ width: '100%', marginTop: 8 }}>
@@ -186,12 +210,12 @@ export default function Syllabi() {
               {mySyllabi.map((item) => (
                 <tr key={item.id}>
                   <td>{item.title || 'Untitled'}</td>
-                  <td>{item.professor || '—'}</td>
-                  <td>{item.school || '—'}</td>
+                  <td>{item.professor || '-'}</td>
+                  <td>{item.school || '-'}</td>
                   <td>{new Date(item.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button type="button" onClick={() => fetchS(item.id)}>
-                      Open
+                    <button type="button" onClick={() => togglePreview(item)}>
+                      {previewId === item.id ? 'Close PDF' : 'Open PDF'}
                     </button>
                   </td>
                 </tr>
@@ -201,19 +225,34 @@ export default function Syllabi() {
         )}
       </section>
 
+      {previewId && previewUrl && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3>PDF Preview</h3>
+            <button type="button" onClick={() => { setPreviewId(null); setPreviewUrl(''); }}>
+              Close
+            </button>
+          </div>
+          <iframe
+            title="Syllabus preview"
+            src={previewUrl}
+            style={{ width: '100%', height: '600px', border: '1px solid #ddd', borderRadius: '8px' }}
+          />
+        </div>
+      )}
+
       {!!id && (
-        <div className="card">
+        <div className="card" style={{ marginTop: 16 }}>
           <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
             <div>
               Created id: <code>{id}</code>
             </div>
             <div className="muted text-sm">
-              {school && professor ? `${school} · ${professor}` : ''}
+              {school && professor ? `${school} - ${professor}` : ''}
             </div>
             <button onClick={parse} disabled={!rawText.trim()}>
               Generate calendar events
             </button>
-            <button onClick={() => fetchS(id)}>Refresh from API</button>
           </div>
         </div>
       )}
@@ -242,12 +281,7 @@ export default function Syllabi() {
           </table>
         </div>
       )}
-      {syllabus && (
-        <div className="card">
-          <h3>Raw API response</h3>
-          <pre>{JSON.stringify(syllabus, null, 2)}</pre>
-        </div>
-      )}
     </div>
   );
 }
+

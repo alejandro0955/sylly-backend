@@ -51,10 +51,7 @@ async function searchPublicSyllabi(req, res) {
     professor: trimmedProfessor,
   });
 
-  const payload = results.map(({ rawText, ...rest }) => ({
-    ...rest,
-    rawTextPreview: rawText ? rawText.slice(0, 2000) : "",
-  }));
+  const payload = results.map(({ rawText, ...rest }) => rest);
 
   res.json({
     count: payload.length,
