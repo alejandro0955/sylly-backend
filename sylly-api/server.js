@@ -12,7 +12,33 @@ const googleRoutes = require("./routes/googleRoutes");
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: "*", credentials: true }));
+
+const defaultOrigins = process.env.NODE_ENV === "production" ? [] : [
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+const envOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (!allowedOrigins.length || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      console.warn(`Blocked CORS origin: ${origin}`);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(morgan("dev"));
 
@@ -48,4 +74,3 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`API on :${port}`));
-
