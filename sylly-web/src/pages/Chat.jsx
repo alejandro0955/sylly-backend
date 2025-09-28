@@ -6,7 +6,7 @@ export default function Chat(){
   const { syllabi, loading: loadingSyllabi, error: syllabiError, refresh: refreshSyllabi } = useMySyllabi()
   const [syllabusId,setSyllabusId]=useState('')
   const [question,setQuestion]=useState('When is the midterm?')
-  const [answer,setAnswer]=useState(null)
+  const [answer,setAnswer]=useState("")
   const [status,setStatus]=useState('')
 
   useEffect(()=>{
@@ -32,7 +32,7 @@ export default function Chat(){
     setStatus('Thinking...')
     try{
       const res=await api.post('/api/chat',{ syllabusId, question })
-      setAnswer(res)
+      setAnswer(typeof res === 'string' ? res : (res && res.answer ? res.answer : ''))
       setStatus('')
       refreshSyllabi()
     }catch(err){
@@ -108,9 +108,7 @@ export default function Chat(){
               fontFamily: 'inherit',
               fontSize: '14px',
               lineHeight: '1.6'
-            }}>
-              {JSON.stringify(answer, null, 2)}
-            </pre>
+            }}>{answer}</pre>
           </div>
         </div>
       )}

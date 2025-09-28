@@ -4,6 +4,13 @@ const WORK_START_HOUR = 8;
 const WORK_END_HOUR = 20;
 const SLOT_INCREMENT_MINUTES = 30;
 
+function dayKey(date) {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
 function toDate(value) {
 	if (!value) return null;
 	if (value instanceof Date) return new Date(value.getTime());
@@ -92,12 +99,18 @@ function findAvailableSlots({
 	const slots = [];
 	let pointer = roundUpToIncrement(windowStart, SLOT_INCREMENT_MINUTES);
 	let safeBusy = mergeIntervals(busyIntervals);
+	const usedDays = new Set();
 
 	while (pointer < windowEnd && slots.length < sessionCount) {
 		const dayStart = setTime(pointer, WORK_START_HOUR);
 		const dayEnd = setTime(pointer, WORK_END_HOUR);
 		if (pointer < dayStart) {
 			pointer = dayStart;
+		}
+		const currentDayKey = dayKey(pointer);
+		if (usedDays.has(currentDayKey)) {
+			pointer = moveToNextWorkdayStart(pointer);
+			continue;
 		}
 		if (pointer >= dayEnd) {
 			pointer = moveToNextWorkdayStart(pointer);
@@ -120,13 +133,11 @@ function findAvailableSlots({
 		}
 
 		slots.push({ start: new Date(pointer), end: slotEnd });
+		usedDays.add(currentDayKey);
 		safeBusy = mergeIntervals(
 			safeBusy.concat([{ start: new Date(pointer), end: slotEnd }])
 		);
-		pointer = roundUpToIncrement(
-			addMinutes(slotEnd, SLOT_INCREMENT_MINUTES),
-			SLOT_INCREMENT_MINUTES
-		);
+		pointer = moveToNextWorkdayStart(slotEnd);
 	}
 
 	return slots;
