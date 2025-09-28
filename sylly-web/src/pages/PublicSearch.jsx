@@ -3,7 +3,11 @@ import { api } from "../api/client";
 import { useSchools } from "../hooks/useSchools";
 
 export default function PublicSearch({ compact = false }) {
-  const { schools, loading: loadingSchools, error: schoolsError } = useSchools();
+  const {
+    schools,
+    loading: loadingSchools,
+    error: schoolsError,
+  } = useSchools();
   const [school, setSchool] = useState("");
   const [professor, setProfessor] = useState("");
   const [professorOptions, setProfessorOptions] = useState([]);
@@ -13,10 +17,15 @@ export default function PublicSearch({ compact = false }) {
   const [searching, setSearching] = useState(false);
   const [previewId, setPreviewId] = useState(null);
 
-  const sortedSchools = useMemo(() => [...schools].sort((a, b) => a.localeCompare(b)), [schools]);
+  const sortedSchools = useMemo(
+    () => [...schools].sort((a, b) => a.localeCompare(b)),
+    [schools]
+  );
   const matchedSchool = useMemo(() => {
     if (!school) return null;
-    return schools.find((s) => s.toLowerCase() === school.toLowerCase()) || null;
+    return (
+      schools.find((s) => s.toLowerCase() === school.toLowerCase()) || null
+    );
   }, [school, schools]);
 
   useEffect(() => {
@@ -30,7 +39,9 @@ export default function PublicSearch({ compact = false }) {
       setLoadingProfessors(true);
       try {
         const params = new URLSearchParams({ school: matchedSchool });
-        const resp = await api.get(`/api/public/professors?${params.toString()}`);
+        const resp = await api.get(
+          `/api/public/professors?${params.toString()}`
+        );
         if (!cancelled) {
           setProfessorOptions(resp.professors || []);
         }
@@ -65,8 +76,14 @@ export default function PublicSearch({ compact = false }) {
     try {
       const params = new URLSearchParams({ school: matchedSchool, professor });
       const resp = await api.get(`/api/public/syllabi?${params.toString()}`);
-      setResults(resp.syllabi?.map((item) => ({ ...item, school: matchedSchool })) || []);
-      setStatus(resp.count ? `Found ${resp.count} syllabus${resp.count === 1 ? "" : "es"}.` : "No syllabi found yet.");
+      setResults(
+        resp.syllabi?.map((item) => ({ ...item, school: matchedSchool })) || []
+      );
+      setStatus(
+        resp.count
+          ? `Found ${resp.count} syllabus${resp.count === 1 ? "" : "es"}.`
+          : "No syllabi found yet."
+      );
       setPreviewId(null);
     } catch (err) {
       setStatus(`Search failed: ${err.message}`);
@@ -86,10 +103,14 @@ export default function PublicSearch({ compact = false }) {
   };
 
   return (
-    <section className={compact ? "card" : "card"} style={compact ? {} : { marginTop: 24 }}>
+    <section
+      className={compact ? "card" : "card"}
+      style={compact ? {} : { marginTop: 24 }}
+    >
       <h2>Find Shared Syllabi</h2>
       <p className="muted" style={{ marginBottom: 12 }}>
-        Browse syllabi fellow students have uploaded. Pick a school and the professor to see shared course outlines.
+        Browse syllabi fellow students have uploaded. Pick a school and the
+        professor to see shared course outlines.
       </p>
       <form onSubmit={handleSearch} className="grid" style={{ gap: 12 }}>
         <div className="row" style={{ gap: 12 }}>
@@ -100,7 +121,9 @@ export default function PublicSearch({ compact = false }) {
             <input
               id="school-input"
               list="school-options"
-              placeholder={loadingSchools ? "Loading schools..." : "Start typing a school"}
+              placeholder={
+                loadingSchools ? "Loading schools..." : "Start typing a school"
+              }
               value={school}
               onChange={(e) => setSchool(e.target.value)}
               disabled={loadingSchools}
@@ -111,7 +134,9 @@ export default function PublicSearch({ compact = false }) {
                 <option key={s} value={s} />
               ))}
             </datalist>
-            {schoolsError && <div className="text-sm text-red-600">{schoolsError}</div>}
+            {schoolsError && (
+              <div className="text-sm text-red-600">{schoolsError}</div>
+            )}
           </div>
           <div style={{ flex: 1 }}>
             <label className="muted" htmlFor="prof-input">
@@ -120,7 +145,9 @@ export default function PublicSearch({ compact = false }) {
             <input
               id="prof-input"
               list="professor-options"
-              placeholder={matchedSchool ? "Professor name" : "Select a school first"}
+              placeholder={
+                matchedSchool ? "Professor name" : "Select a school first"
+              }
               value={professor}
               onChange={(e) => setProfessor(e.target.value)}
               disabled={!matchedSchool}
@@ -131,33 +158,67 @@ export default function PublicSearch({ compact = false }) {
                 <option key={p} value={p} />
               ))}
             </datalist>
-            {loadingProfessors && <div className="text-sm muted">Loading professors...</div>}
+            {loadingProfessors && (
+              <div className="text-sm muted">Loading professors...</div>
+            )}
           </div>
         </div>
         <div className="row" style={{ justifyContent: "flex-end", gap: 12 }}>
-          <button type="submit" disabled={searching || loadingSchools}>
+          <button
+            type="submit"
+            disabled={searching || loadingSchools}
+            style={{
+              flex: 1,
+              minWidth: "80px",
+              borderRadius: "var(--border-radius)",
+              justifyContent: "center",
+            }}
+          >
             {searching ? "Searching..." : "Search"}
           </button>
         </div>
       </form>
-      {status && <div className="muted" style={{ marginTop: 12 }}>{status}</div>}
+      {status && (
+        <div className="muted" style={{ marginTop: 12 }}>
+          {status}
+        </div>
+      )}
       {results.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div className="grid" style={{ gap: 12 }}>
             {results.map((item) => (
               <article key={item.id} className="card" style={{ margin: 0 }}>
-                <header className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-                  <h3 style={{ margin: 0 }}>{item.title || "Untitled Syllabus"}</h3>
-                  <span className="muted text-sm">{new Date(item.createdAt).toLocaleDateString()}</span>
+                <header
+                  className="row"
+                  style={{
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                  }}
+                >
+                  <h3 style={{ margin: 0 }}>
+                    {item.title || "Untitled Syllabus"}
+                  </h3>
+                  <span className="muted text-sm">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </span>
                 </header>
                 <div className="muted text-sm" style={{ marginTop: 4 }}>
                   <strong>{item.professor}</strong> - {item.school}
                 </div>
-                
+
                 {item.fileUrl && (
                   <div style={{ marginTop: 8 }}>
-                    <button type="button" onClick={() => togglePreview(item)}>
-                      {previewId === item.id ? 'Close PDF' : 'Open PDF'}
+                    <button
+                      type="button"
+                      onClick={() => togglePreview(item)}
+                      style={{
+                        flex: 1,
+                        minWidth: "80px",
+                        borderRadius: "var(--border-radius)",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {previewId === item.id ? "Close PDF" : "Open PDF"}
                     </button>
                   </div>
                 )}
@@ -166,7 +227,12 @@ export default function PublicSearch({ compact = false }) {
                     <iframe
                       title={`Shared syllabus ${item.id}`}
                       src={item.fileUrl}
-                      style={{ width: '100%', height: '500px', border: '1px solid #ddd', borderRadius: '8px' }}
+                      style={{
+                        width: "100%",
+                        height: "500px",
+                        border: "1px solid #ddd",
+                        borderRadius: "8px",
+                      }}
                     />
                   </div>
                 )}
