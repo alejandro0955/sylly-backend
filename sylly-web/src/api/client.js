@@ -1,4 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim()
+if (!rawBase) {
+  throw new Error('VITE_API_BASE_URL is not configured. Set it in your environment.')
+}
+const API_BASE = rawBase.replace(/\/+$/, '')
 
 let tokenSupplier = null
 
