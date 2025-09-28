@@ -6,31 +6,70 @@ import Planner from "./pages/Planner";
 import Chat from "./pages/Chat";
 import PublicSearch from "./pages/PublicSearch";
 import { setAccessTokenSupplier } from "./api/client";
+import logo from "../logo.svg";
+
+// Import some icons
+import {
+  FaTachometerAlt,
+  FaBook,
+  FaClipboardList,
+  FaComments,
+  FaSearch,
+} from "react-icons/fa";
 
 const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
+// Add icon component as third element in each nav item
 const NAV_ITEMS = [
-  ["dashboard", "Dashboard"],
-  ["syllabi", "My Syllabi"],
-  ["planner", "Planner"],
-  ["chat", "Chat"],
-  ["browse", "Shared Syllabi"],
+  ["dashboard", "Dashboard", <FaTachometerAlt />],
+  ["syllabi", "My Syllabi", <FaBook />],
+  ["planner", "Planner", <FaClipboardList />],
+  ["chat", "Chat", <FaComments />],
+  ["browse", "Shared Syllabi", <FaSearch />],
 ];
 
 function Nav({ page, setPage, userName, onLogout }) {
   return (
-    <header>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <strong>Sylly</strong>
-        <div className="row" style={{ gap: 12, alignItems: "center" }}>
+    <header style={{ padding: "12px 24px", borderBottom: "1px solid #ccc" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        {/* Left: Logo + Title */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <img
+            src={logo}
+            alt="Sylly Logo"
+            width="40"
+            height="50"
+            className="d-inline-block align-top"
+          />
+          <strong>Sylly</strong>
+        </div>
+
+        {/* Right: Profile info */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span className="muted">{userName}</span>
           <button type="button" onClick={onLogout}>
             Log out
           </button>
         </div>
       </div>
-      <nav className="row">
-        {NAV_ITEMS.map(([key, label]) => (
+
+      {/* Nav Links */}
+      <nav
+        style={{
+          display: "flex",
+          gap: 16,
+          borderTop: "1px solid #eee",
+          paddingTop: 8,
+        }}
+      >
+        {NAV_ITEMS.map(([key, label, icon]) => (
           <a
             key={key}
             href="#"
@@ -39,7 +78,9 @@ function Nav({ page, setPage, userName, onLogout }) {
               e.preventDefault();
               setPage(key);
             }}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
+            {icon}
             {label}
           </a>
         ))}
@@ -92,7 +133,8 @@ export default function App() {
         <div className="card" style={{ maxWidth: 420 }}>
           <h1>Welcome to Sylly</h1>
           <p className="muted">
-            Sign in with Auth0 to upload syllabi, review extracted events, and push them to your Google Calendar.
+            Sign in with Auth0 to upload syllabi, review extracted events, and
+            push them to your Google Calendar.
           </p>
           <button type="button" onClick={() => loginWithRedirect()}>
             Log in / Sign up
