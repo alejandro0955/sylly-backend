@@ -1,5 +1,20 @@
-const { callGeminiJSON } = require('../services/geminiService');
+const { callGeminiText } = require('../services/geminiService');
 const { SyllabusModel } = require('../models/syllabusModel');
+
+function cleanAnswer(text) {
+  if (!text) return '';
+  return text
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/^\s*([*•-]|\d+\.)\s*/, '')
+        .replace(/\*\*/g, '')
+        .trimEnd()
+    )
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 async function ask(req, res) {
   const { syllabusId, question } = req.body;
@@ -11,9 +26,13 @@ async function ask(req, res) {
     return res.status(404).json({ error: 'Syllabus not found' });
   }
   const miniContext = (syllabus.rawText || '').split(/\n\n+/).slice(0, 10).join('\n\n');
-  const prompt = `Answer based only on this syllabus content. If unsure, say you don't know. Include an item title or snippet when citing.`;
-  const json = await callGeminiJSON(prompt, `${miniContext}\n\nQ: ${question}`);
-  res.json({ answer: json });
+  const instructions = 'Answer in natural language based only on this syllabus content. If unsure, say you do not know. Respond in plain sentences without bullet points, numbered lists, or markdown formatting.';
+  const rawAnswer = await callGeminiText(
+    instructions,
+    miniContext + '\n\nQ: ' + question
+  );
+  const answer = cleanAnswer(rawAnswer);
+  res.json({ answer: answer || 'I was unable to find that in the syllabus.' });
 }
 
 module.exports = { ask };
