@@ -4,9 +4,21 @@ import { useMySyllabi } from '../hooks/useMySyllabi'
 
 function formatDateTime(value) {
   if (!value) return ''
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-')
+    return month + '/' + day + '/' + year
+  }
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getFullYear()
+  let hours = date.getHours()
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const meridiem = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12 || 12
+  const hour = String(hours)
+  return month + '/' + day + '/' + year + ' ' + hour + ':' + minutes + ' ' + meridiem
 }
 
 export default function Planner(){
@@ -324,8 +336,8 @@ export default function Planner(){
         <table><thead><tr><th>Title</th><th>Start</th><th>End</th></tr></thead><tbody>
           {events.map((evt,i)=>(<tr key={i}>
             <td>{evt.summary}</td>
-            <td>{evt.start?.dateTime || evt.start?.date || ''}</td>
-            <td>{evt.end?.dateTime || evt.end?.date || ''}</td>
+            <td>{formatDateTime(evt.start?.dateTime || evt.start?.date)}</td>
+            <td>{formatDateTime(evt.end?.dateTime || evt.end?.date)}</td>
           </tr>))}
         </tbody></table>
       </div>}
